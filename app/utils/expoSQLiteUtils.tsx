@@ -46,6 +46,17 @@ export const getAllPlants = async ()=> {
     }
   }
 
+  export const deletePlant = async (plantId: Number)=> {
+    try{
+      const db = await SQLite.openDatabaseAsync('plants.db');
+      if(db){
+        await db.runAsync('DELETE FROM plants WHERE id = $id', { $id: String(plantId) });        
+      }
+    } catch(error) {
+      console.error("Error:",error)
+    }
+  }
+
 export default function expoSQLite (){
   return null
 }

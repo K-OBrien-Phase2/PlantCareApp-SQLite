@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { addPlant } from '../utils/expoSQLiteUtils'
-import { Colors } from '../../constants/Colors'
+import { router } from 'expo-router';
+
 export default function AddAPlant() {
   const [plantName, setPlantName] = useState('');
   const [plantType, setPlantType] = useState('');
@@ -23,7 +24,14 @@ export default function AddAPlant() {
         onChangeText={setPlantType}
       />
       <TouchableOpacity
-        onPress={ async ()=> await addPlant(plantName, plantType)} 
+        onPress={ async ()=> {
+          router.push({
+            pathname: '/'
+          })
+          await addPlant(plantName, plantType)
+          setPlantName("")
+          setPlantType("")
+        }} 
         style={styles.button}>
         <Text style={styles.buttonText}>Add a Plant</Text>
       </TouchableOpacity>

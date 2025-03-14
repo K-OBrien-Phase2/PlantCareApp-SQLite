@@ -1,14 +1,25 @@
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native'
-import { useEffect, useState } from 'react'
-import { getAllPlants, Plant } from '../utils/expoSQLiteUtils' //TODO: make a types folder
-import { Colors } from '../../constants/Colors'//TODO: set all colors in the colors folder
+import {
+  View,
+  SafeAreaView,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  Animated,
+  PanResponder,
+} from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { getAllPlants, Plant, deletePlant } from '../utils/expoSQLiteUtils' //TODO: make a types folder
+// import { Colors } from '../../constants/Colors'//TODO: set all colors in the colors folder
 
 export default function HomeScreen() {
-
   const [plants, setPlants] = useState<Plant[]>([])
-  const [welcomeStatement, setWelcomeStatement] = useState(`Welcome to your plant's index!\nAdd a plant to get started!`)
+  const [welcomeStatement, setWelcomeStatement] = useState(
+    `Welcome to your plant's index!\nAdd a plant to get started!`
+  )
   const [refreshing, setRefreshing] = useState(false)
-  
+
   useEffect(() => {
     loadPlants()
   }, [])
@@ -17,27 +28,71 @@ export default function HomeScreen() {
   const loadPlants = async () => {
     try {
       const storedPlants = await getAllPlants()
-      if (storedPlants) {
+      if (storedPlants && storedPlants?.length > 0) {
         setPlants(storedPlants)
-        setWelcomeStatement(`Welcome back!\nIs it time to check on your plants?`)
+        setWelcomeStatement(
+          `Welcome back!\nIs it time to check on your plants?`
+        )
+      } else {
+        setPlants([])
+        setWelcomeStatement(
+          `Welcome to your plant's index!\nAdd a plant to get started!`
+        )
       }
     } catch (error) {
       console.error('Error loading plants:', error)
     }
   }
 
+
+  
+
   // Render Plant Item
   const renderItem = (item: Plant) => {
-    return(
-      <View style={styles.plantItemRow}>
-        <Text style={styles.plantItemIcon}>🪴</Text>
-        <View style={styles.plantItemColumn}>
-          <Text style={styles.plantItemName}>{item.name}</Text>
-          <Text style={styles.plantItemType}>{item.type}</Text>
+    // Pan responder: handles swipe-to-delete animation 
+    const translateX = new Animated.Value(0)
+    const panResponder = 
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
+        },
+        onPanResponderMove: (_, gestureState) => {
+          translateX.setValue(gestureState.dx)
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx < -50) {
+            Animated.spring( translateX, {toValue: -100, useNativeDriver: true}).start()
+          }
+          else{
+            Animated.spring( translateX, {toValue: 0, useNativeDriver: true}).start()
+          }
+        },
+      })
+    return (
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={{
+          transform: [{ translateX }],
+        }}
+      >
+        <View style={styles.plantItemRow}>
+          <Text style={styles.plantItemIcon}>🪴</Text>
+          <View>
+            <Text style={styles.plantItemName}>{item.name}</Text>
+            <Text style={styles.plantItemType}>{item.type}</Text>
+          </View>
         </View>
-      </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => deletePlant(item.id)}
+        >
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
     )
   }
+
   // onRefresh
   const onRefresh = () => {
     setRefreshing(true)
@@ -46,34 +101,38 @@ export default function HomeScreen() {
       setRefreshing(false)
     }, 200)
   }
+
   return (
-    <View style={styles.view}>
-        <Text style={styles.text}>{welcomeStatement}</Text>
-        <FlatList
-          data={plants}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => renderItem(item)}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['white']}
-              progressBackgroundColor={'green'}/>
-          }
-        />
-    </View>
+    <SafeAreaView style={styles.view}>
+      <Text style={styles.text}>{welcomeStatement}</Text>
+      <FlatList
+        style={styles.flatList}
+        data={plants}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => renderItem(item)}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['white']}
+            progressBackgroundColor={'green'}
+          />
+        }
+      />
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   view: {
     flex: 1,
-    flexDirection: 'column',
     paddingTop: 100,
   },
+  flatList: {
+    flex: 1,
+  },
   list: {
-    flex:1,
     flexGrow: 1,
   },
   text: {
@@ -83,22 +142,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   plantItem: {
-    flex:1,
+    flex: 1,
     flexDirection: 'row',
     width: '100%',
     borderWidth: 1,
-    padding: 20
+    padding: 20,
   },
   plantItemRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: 'grey',
     backgroundColor: '#ccc',
-    borderRadius: 20,
-    padding: 20
-  },
-  plantItemColumn: {
-    flex:1,
+    padding: 20,
   },
   plantItemName: {
     fontSize: 20,
@@ -112,5 +167,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     alignSelf: 'center',
     paddingRight: 20,
-  }
+  },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    position: 'absolute',
+    right: -100,
+    height: '100%',
+    alignSelf: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    paddingHorizontal: 20,
+    fontSize: 20,
+  },
 })
