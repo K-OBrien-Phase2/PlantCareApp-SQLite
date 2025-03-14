@@ -40,6 +40,14 @@ export default function TabLayout() {
           tabBarIcon: () => <Text>➕</Text>,
         }}
       />
+      <Tabs.Screen
+        name="plantDetails"
+        options={{
+          headerShown: true,
+          title: 'Edit Your Plant',
+          href: null
+        }}
+      />
     </Tabs>
   );
 }

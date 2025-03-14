@@ -8,9 +8,11 @@ import {
   RefreshControl,
   Animated,
   PanResponder,
+  Touchable,
 } from 'react-native'
 import { useEffect, useRef, useState } from 'react'
 import { getAllPlants, Plant, deletePlant } from '../utils/expoSQLiteUtils' //TODO: make a types folder
+import { router } from 'expo-router'
 // import { Colors } from '../../constants/Colors'//TODO: set all colors in the colors folder
 
 export default function HomeScreen() {
@@ -76,13 +78,22 @@ export default function HomeScreen() {
           transform: [{ translateX }],
         }}
       >
-        <View style={styles.plantItemRow}>
+        <TouchableOpacity
+          style={styles.plantItemRow}
+          onPress={()=> {
+            router.push({
+              pathname: '/plantDetails',
+              params: {
+                id: item.id
+              }
+            })
+          }}>
           <Text style={styles.plantItemIcon}>🪴</Text>
           <View>
             <Text style={styles.plantItemName}>{item.name}</Text>
             <Text style={styles.plantItemType}>{item.type}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => deletePlant(item.id)}
