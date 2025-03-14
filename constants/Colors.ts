@@ -23,4 +23,15 @@ export const Colors = {
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
   },
+  // const colors = {
+  //   background: "#121212", // Dark mode background
+  //   primary: "#1B3B2F", // Deep forest green
+  //   secondary: "#3A4F41", // Dark olive
+  //   accent: "#4A3F35", // Earthy brown
+  //   textPrimary: "#E0E0E0", // Soft light gray
+  //   textSecondary: "#A0A0A0", // Muted gray
+  //   border: "#2B2B2B", // Subtle divider color
+  // };
+  
+  // export default colors;
 };

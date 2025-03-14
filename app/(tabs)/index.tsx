@@ -1,74 +1,116 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native'
+import { useEffect, useState } from 'react'
+import { getAllPlants, Plant } from '../utils/expoSQLiteUtils' //TODO: make a types folder
+import { Colors } from '../../constants/Colors'//TODO: set all colors in the colors folder
 
 export default function HomeScreen() {
+
+  const [plants, setPlants] = useState<Plant[]>([])
+  const [welcomeStatement, setWelcomeStatement] = useState(`Welcome to your plant's index!\nAdd a plant to get started!`)
+  const [refreshing, setRefreshing] = useState(false)
+  
+  useEffect(() => {
+    loadPlants()
+  }, [])
+
+  // Load plants from expoSQLite
+  const loadPlants = async () => {
+    try {
+      const storedPlants = await getAllPlants()
+      if (storedPlants) {
+        setPlants(storedPlants)
+        setWelcomeStatement(`Welcome back!\nIs it time to check on your plants?`)
+      }
+    } catch (error) {
+      console.error('Error loading plants:', error)
+    }
+  }
+
+  // Render Plant Item
+  const renderItem = (item: Plant) => {
+    return(
+      <View style={styles.plantItemRow}>
+        <Text style={styles.plantItemIcon}>🪴</Text>
+        <View style={styles.plantItemColumn}>
+          <Text style={styles.plantItemName}>{item.name}</Text>
+          <Text style={styles.plantItemType}>{item.type}</Text>
+        </View>
+      </View>
+    )
+  }
+  // onRefresh
+  const onRefresh = () => {
+    setRefreshing(true)
+    setTimeout(() => {
+      loadPlants()
+      setRefreshing(false)
+    }, 200)
+  }
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={styles.view}>
+        <Text style={styles.text}>{welcomeStatement}</Text>
+        <FlatList
+          data={plants}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => renderItem(item)}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['white']}
+              progressBackgroundColor={'green'}/>
+          }
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  view: {
+    flex: 1,
+    flexDirection: 'column',
+    paddingTop: 100,
+  },
+  list: {
+    flex:1,
+    flexGrow: 1,
+  },
+  text: {
+    alignSelf: 'center',
+    textAlign: 'center',
+    paddingBottom: 40,
+    fontSize: 20,
+  },
+  plantItem: {
+    flex:1,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    width: '100%',
+    borderWidth: 1,
+    padding: 20
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  plantItemRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'grey',
+    backgroundColor: '#ccc',
+    borderRadius: 20,
+    padding: 20
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  plantItemColumn: {
+    flex:1,
   },
-});
+  plantItemName: {
+    fontSize: 20,
+    fontWeight: 500,
+  },
+  plantItemType: {
+    fontSize: 20,
+    fontWeight: 300,
+  },
+  plantItemIcon: {
+    fontSize: 20,
+    alignSelf: 'center',
+    paddingRight: 20,
+  }
+})
